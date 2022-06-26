@@ -16,7 +16,8 @@ var upgrader = websocket.Upgrader{
 }
 
 type Lobby struct {
-	Rooms      map[string]map[*session.Room]bool
+	Rooms      map[string]*session.Room
+	CreateRoom chan string
 	Register   chan session.Ticket
 	Unregister chan session.Ticket
 }
@@ -30,8 +31,17 @@ type ConnInfo struct {
 func (lobby *Lobby) Run() {
 	for {
 		select {
+		case roomId := <-lobby.CreateRoom:
+			newRoom := session.CreateEmptyRoom(roomId)
+			lobby.Rooms[roomId] = newRoom
 		case t := <-lobby.Register:
 			fmt.Println(t.Username)
+			room := lobby.Rooms[t.RoomId]
+			session.RegisterUser(room, t.UserId, t.Username, t.Conn)
+		case t := <-lobby.Unregister:
+			fmt.Println(t.Username)
+			room := lobby.Rooms[t.RoomId]
+			session.UnregisterUser(room, t.UserId)
 		}
 	}
 }
@@ -50,10 +60,7 @@ func EnterRoom(lobby *Lobby, w http.ResponseWriter, r *http.Request, usr ConnInf
 		Username: usr.Name,
 		Conn:     conn,
 	}
+
 	lobby.Register <- ticket
 	return
-}
-
-func doshit(c *session.Connection) {
-	doshit(c)
 }

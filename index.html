@@ -8,7 +8,8 @@
             let msg = document.getElementById("msg");
             let log = document.getElementById("log");
             let name = document.getElementById("name");
-                    
+            let roomname = document.getElementById("roomName");
+
             function appendLog(item) {
                 let doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
                 log.appendChild(item);
@@ -48,7 +49,13 @@
                         appendLog(item);
                     }
                 };
-            }    
+            };
+
+            document.getElementById("createRoom").onclick = function () {
+                console.log("create room!");
+                const rname = roomname.value;
+                location.href = "http://" + document.location.host + "/room/" + rname;
+            };
         };
     </script>
     <style type="text/css">
@@ -96,5 +103,7 @@
 </form>
 <input type="text" id="name" />
 <button id="connect"> Connect </button>
+<input type="text" id="roomName" />
+<button id="createRoom"> Create Room </button>
 </body>
 </html>

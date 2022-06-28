@@ -1,11 +1,8 @@
 package server
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-
-	"codetgt/internal/session"
 
 	"github.com/gorilla/websocket"
 )
@@ -16,10 +13,10 @@ var upgrader = websocket.Upgrader{
 }
 
 type Lobby struct {
-	Rooms      map[string]*session.Room
+	Rooms      map[string]*Room
 	CreateRoom chan string
-	Register   chan session.Ticket
-	Unregister chan session.Ticket
+	Register   chan Ticket
+	Unregister chan Ticket
 }
 
 type ConnInfo struct {
@@ -32,18 +29,24 @@ func (lobby *Lobby) Run() {
 	for {
 		select {
 		case roomId := <-lobby.CreateRoom:
-			newRoom := session.CreateEmptyRoom(roomId)
+			newRoom := CreateEmptyRoom(roomId)
 			lobby.Rooms[roomId] = newRoom
 		case t := <-lobby.Register:
-			fmt.Println(t.Username)
-			room := lobby.Rooms[t.RoomId]
-			session.RegisterUser(room, t.UserId, t.Username, t.Conn)
+			room := lobby.Rooms[t.roomId]
+			RegisterUser(room, t.userId, t.username, t.conn)
 		case t := <-lobby.Unregister:
-			fmt.Println(t.Username)
-			room := lobby.Rooms[t.RoomId]
-			session.UnregisterUser(room, t.UserId)
+			room := lobby.Rooms[t.roomId]
+			UnregisterUser(room, t.userId)
 		}
 	}
+}
+
+func SpawnRoom(lobby *Lobby, roomId string) {
+	_, ok := lobby.Rooms[roomId]
+	if !ok {
+		lobby.CreateRoom <- roomId
+	}
+	return
 }
 
 func EnterRoom(lobby *Lobby, w http.ResponseWriter, r *http.Request, usr ConnInfo) {
@@ -53,14 +56,16 @@ func EnterRoom(lobby *Lobby, w http.ResponseWriter, r *http.Request, usr ConnInf
 		return
 	}
 
-	conn := &session.Connection{Ws: ws, Send: make(chan []byte, 256)}
-	ticket := session.Ticket{
-		RoomId:   usr.RoomId,
-		UserId:   usr.Uuid,
-		Username: usr.Name,
-		Conn:     conn,
+	conn := &Connection{ws: ws, send: make(chan []byte, 256)}
+	ticket := Ticket{
+		roomId:   usr.RoomId,
+		userId:   usr.Uuid,
+		username: usr.Name,
+		conn:     conn,
 	}
 
 	lobby.Register <- ticket
-	return
+
+	go ticket.writePump()
+	go ticket.readPump(lobby)
 }

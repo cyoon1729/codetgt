@@ -38,8 +38,16 @@ func UnregisterUser(room *Room, uuid string) {
 	delete(room.userNames, uuid)
 }
 
-func (room *Room) Broadcast(msg string) {
-
+func (r *Room) Broadcast(msg Message) {
+	for usr := range r.userConns {
+		c := r.userConns[usr]
+		select {
+		case c.send <- msg.data:
+		default:
+			close(c.send)
+			delete(r.userConns, usr)
+		}
+	}
 }
 
 func (room *Room) Run() {

@@ -38,6 +38,10 @@ func UnregisterUser(room *Room, uuid string) {
 	delete(room.userNames, uuid)
 }
 
+func (room *Room) Broadcast(msg string) {
+
+}
+
 func (room *Room) Run() {
 	return
 }

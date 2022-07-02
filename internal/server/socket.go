@@ -33,7 +33,9 @@ func (c *Connection) initSocketConn() {
 	})
 }
 
-func (c *Connection) readPump() {
+func (c *Connection) readPump(room *Room, uuid string) {
+	username := room.userNames[uuid]
+
 	for {
 		_, msg, err := c.ws.ReadMessage()
 		if err != nil {
@@ -43,6 +45,9 @@ func (c *Connection) readPump() {
 			break
 		}
 		fmt.Println(string(msg))
+		header := []byte("[" + room.roomId + "] " + username + "> ")
+		m := Message{append(header, msg...)}
+		room.broadcast <- m
 	}
 }
 

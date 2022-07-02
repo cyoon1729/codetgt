@@ -31,13 +31,13 @@ func (lobby *Lobby) Run() {
 		case roomId := <-lobby.CreateRoom:
 			newRoom := CreateEmptyRoom(roomId)
 			lobby.Rooms[roomId] = newRoom
+			go lobby.Rooms[roomId].Run()
 		case t := <-lobby.Register:
 			room := lobby.Rooms[t.roomId]
-			room.registerUser(t.userId, t.username, t.conn)
-			room.startUserSession(t.userId)
+			room.startUserSession <- t
 		case t := <-lobby.Unregister:
 			room := lobby.Rooms[t.roomId]
-			room.unregisterUser(t.userId)
+			room.unregisterUser <- t.userId
 		}
 	}
 }

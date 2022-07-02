@@ -33,10 +33,11 @@ func (lobby *Lobby) Run() {
 			lobby.Rooms[roomId] = newRoom
 		case t := <-lobby.Register:
 			room := lobby.Rooms[t.roomId]
-			RegisterUser(room, t.userId, t.username, t.conn)
+			room.registerUser(t.userId, t.username, t.conn)
+			room.startUserSession(t.userId)
 		case t := <-lobby.Unregister:
 			room := lobby.Rooms[t.roomId]
-			UnregisterUser(room, t.userId)
+			room.unregisterUser(t.userId)
 		}
 	}
 }
@@ -57,6 +58,8 @@ func EnterRoom(lobby *Lobby, w http.ResponseWriter, r *http.Request, usr ConnInf
 	}
 
 	conn := &Connection{ws: ws, send: make(chan []byte, 256)}
+	conn.initSocketConn()
+
 	ticket := Ticket{
 		roomId:   usr.RoomId,
 		userId:   usr.Uuid,
@@ -65,7 +68,4 @@ func EnterRoom(lobby *Lobby, w http.ResponseWriter, r *http.Request, usr ConnInf
 	}
 
 	lobby.Register <- ticket
-
-	go ticket.writePump()
-	go ticket.readPump(lobby)
 }

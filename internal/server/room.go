@@ -1,5 +1,7 @@
 package server
 
+import "fmt"
+
 type Room struct {
 	roomId    string
 	doc       *Document
@@ -26,16 +28,23 @@ func CreateEmptyRoom(roomId string) *Room {
 	return newRoom
 }
 
-func RegisterUser(room *Room, uuid string, name string, conn *Connection) {
-	room.userNames[uuid] = name
-	room.userConns[uuid] = conn
+func (r *Room) registerUser(uuid string, name string, conn *Connection) {
+	r.userNames[uuid] = name
+	r.userConns[uuid] = conn
 	return
 }
 
-func UnregisterUser(room *Room, uuid string) {
-	close(room.userConns[uuid].send)
-	delete(room.userConns, uuid)
-	delete(room.userNames, uuid)
+func (r *Room) unregisterUser(uuid string) {
+	close(r.userConns[uuid].send)
+	delete(r.userConns, uuid)
+	delete(r.userNames, uuid)
+}
+
+func (r *Room) startUserSession(uuid string) {
+	fmt.Println(uuid)
+	conn := r.userConns[uuid]
+	go conn.writePump()
+	go conn.readPump()
 }
 
 func (r *Room) Broadcast(msg Message) {

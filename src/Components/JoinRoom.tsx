@@ -14,13 +14,20 @@ import {
   InputGroup,
   Center,
 } from '@chakra-ui/react'
+import { useNavigate } from "react-router-dom";
 
-const generateRoomId = () => {
-    let newRoomId = uuidv4();
-    console.log(newRoomId);
-}
 
 const JoinRoom = () => {
+  let navigate = useNavigate();
+    
+  const generateRoomId = () => {
+    return uuidv4();
+  }
+
+  const joinRoom = (roomId: string) => {
+    navigate(`/rooms/${roomId}`);
+  }
+
   const [modalIsOpen, setIsOpen] = React.useState(true);
 
   const openModal = () => {
@@ -29,6 +36,12 @@ const JoinRoom = () => {
   
   const closeModal = () => {
     setIsOpen(false);
+  }
+  
+  const [roomId, setRoomId] = React.useState('')
+    
+  const handleRoomIdInput = (event: any) => {
+      setRoomId(event.target.value)
   }
 
   return (
@@ -48,17 +61,30 @@ const JoinRoom = () => {
           <ModalBody mt={8}>
             <VStack spacing={4} align="center">  
               <Box width="100%">
-                <Button width="100%">
-                  Create New Room      
-                </Button>
+                  <Button
+                    width="100%"
+                    onClick={() => joinRoom(generateRoomId())}
+                  >
+                    Create New Room
+                  </Button>
               </Box>
               <Box width="100%" fontSize="md" fontWeight="semibold">
                 <Center> Or </Center>
               </Box>
               <Box width="100%">
                 <InputGroup>
-                  <Input placeholder='Room ID' size='md' width="80%"/>
-                  <Button width="20%" ml={2}>
+                  <Input
+                    placeholder='Room ID'
+                    value={roomId}
+                    size='md'
+                    width="80%"
+                    onChange={handleRoomIdInput}
+                  />
+                  <Button
+                    width="20%"
+                    ml={2}
+                    onClick={() => joinRoom(roomId)}
+                  >
                     Join
                   </Button>
                 </InputGroup>

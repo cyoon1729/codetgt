@@ -17,7 +17,11 @@ import {
 import { useNavigate } from "react-router-dom";
 
 
-const JoinRoom = () => {
+interface JoinRoomProps {
+  modalDefault: boolean,
+}
+
+const JoinRoomModal = (props: JoinRoomProps) => {
   let navigate = useNavigate();
     
   const generateRoomId = () => {
@@ -28,7 +32,7 @@ const JoinRoom = () => {
     navigate(`/rooms/${roomId}`);
   }
 
-  const [modalIsOpen, setIsOpen] = React.useState(true);
+  const [modalIsOpen, setIsOpen] = React.useState(props.modalDefault);
 
   const openModal = () => {
     setIsOpen(true);
@@ -54,16 +58,16 @@ const JoinRoom = () => {
           filter="blur(20px)"
         />
         <ModalContent height="30%">
-          <ModalHeader> 
-            code-tgt {'>'} &nbsp; Create or Join New Room
-          </ModalHeader>
           <ModalCloseButton />
-          <ModalBody mt={8}>
+          <ModalBody py={8} mt={8}>
             <VStack spacing={4} align="center">  
               <Box width="100%">
                   <Button
                     width="100%"
-                    onClick={() => joinRoom(generateRoomId())}
+                    onClick={() => {
+                      joinRoom(generateRoomId());
+                      closeModal()
+                    }}
                   >
                     Create New Room
                   </Button>
@@ -83,7 +87,10 @@ const JoinRoom = () => {
                   <Button
                     width="20%"
                     ml={2}
-                    onClick={() => joinRoom(roomId)}
+                    onClick={() => {
+                      joinRoom(roomId)
+                      closeModal()
+                    }}
                   >
                     Join
                   </Button>
@@ -97,4 +104,4 @@ const JoinRoom = () => {
   );
 }
 
-export default JoinRoom;
+export default JoinRoomModal;

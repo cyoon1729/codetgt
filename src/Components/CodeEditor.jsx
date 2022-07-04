@@ -2,23 +2,30 @@ import React, { useEffect, useState, useRef } from 'react';
 import CodeMirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
 import * as CodeMirrorCollabExt from '@convergencelabs/codemirror-collab-ext';
+import { Flex, Box, Textarea, Text } from '@chakra-ui/react';
 
+const textAreaStyle = {
+    width: "100%",
+    maxWidth: "100%",
+    display: 'flex',
+    flexDirection: 'column'
+};
 
 const CodeEditor = (props) => {
   const [sessionParams, setSessionParams] = useState(null);
   const editorArea = useRef(null); 
   const ws = useRef(null);
-	const editorId = props.eid;
+  const editorId = props.eid;
 
-	useEffect(() => {
-		ws.current = new WebSocket("ws://localhost:3333/");
+  useEffect(() => {
+	ws.current = new WebSocket("ws://localhost:3333/");
     ws.current.onopen = () => console.log("ws init");
-		ws.current.onclose = () => console.log("ws close");
+	ws.current.onclose = () => console.log("ws close");
     
     const wsCurrent = ws.current;
 
-		return () => wsCurrent.close();
-	}, []);
+	return () => wsCurrent.close();
+  }, []);
 
   useEffect(() => {      
     const editor = CodeMirror.fromTextArea(
@@ -28,9 +35,11 @@ const CodeEditor = (props) => {
         lineWrapping: true,
         scrollbarStyle: 'null',
         theme: 'default',
+        width: '100%',
+        height: '100%',
       }
     );
-    editor.setSize("100%", "40vh");
+    editor.setSize("100%", "100%");
     editor.setValue("// Hello World!");
    
     editor.on('change', (instance, { origin }) => {
@@ -62,9 +71,9 @@ const CodeEditor = (props) => {
   }, [sessionParams]);
 
   return (
-    <div>
-      <textarea ref={editorArea} />
-    </div>
+    <Flex width="full" direction="row">
+      <Textarea width="100%" ref={editorArea} />
+    </Flex>
   );
 };
 

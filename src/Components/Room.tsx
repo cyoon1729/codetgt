@@ -15,10 +15,10 @@ const Room = (props: RoomProps) => {
   const openModal = props.modalOpenDefault;
   
   return (
-    <Flex className="Room" height="90vh" maxHeight="90vh" borderBottom={2}>
+    <Flex className="Room" h="90vh" maxH="90vh" borderBottom={2}>
       <Flex
-        width="full"
-        height="90vh"
+        w="full"
+        h="90vh"
         boxShadow="md"
         py={2}
         gap={2}
@@ -26,13 +26,19 @@ const Room = (props: RoomProps) => {
         direction="row"
         overflowY="hidden"
       >
-        <Box width="25%" height="100%">
+        <Box w="25%" h="100%">
           <ControlPanel roomId={roomId}/>
         </Box>
 
         <CodeEditor eid={1} />
 
-        <Box height="100%" py={2} width="25%" borderLeft="2px" borderLeftColor="#E1E1E1">
+        <Box
+          w="25%"
+          h="100%"
+          py={2}
+          borderLeft="2px"
+          borderLeftColor="#E1E1E1"
+        >
           <CommPanel />
         </Box>
       </Flex>

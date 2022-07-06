@@ -65,7 +65,7 @@ const JoinRoomModal = (props: JoinRoomProps) => {
             <VStack spacing={4} align="center">  
               <Box width="100%">
                   <Button
-                    width="100%"
+                    w="100%"
                     onClick={() => {
                       joinRoom(generateRoomId());
                       closeModal()
@@ -74,20 +74,20 @@ const JoinRoomModal = (props: JoinRoomProps) => {
                     Create New Room
                   </Button>
               </Box>
-              <Box width="100%" fontSize="md" fontWeight="semibold">
+              <Box w="100%" fontSize="md" fontWeight="semibold">
                 <Center> Or </Center>
               </Box>
-              <Box width="100%">
+              <Box w="100%">
                 <InputGroup>
                   <Input
                     placeholder='Room ID'
                     value={roomId}
                     size='md'
-                    width="80%"
+                    w="80%"
                     onChange={handleRoomIdInput}
                   />
                   <Button
-                    width="20%"
+                    w="20%"
                     ml={2}
                     onClick={() => {
                       joinRoom(roomId)

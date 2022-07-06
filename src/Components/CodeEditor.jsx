@@ -71,8 +71,13 @@ const CodeEditor = (props) => {
   }, [sessionParams]);
 
   return (
-    <Flex width="full" direction="row">
-      <Textarea width="100%" ref={editorArea} />
+    <Flex
+      w="full"
+      direction="row"
+      overflowY="scroll"
+      flexDirection="column"
+    >
+      <Textarea w="100%" ref={editorArea} />
     </Flex>
   );
 };

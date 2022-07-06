@@ -1,5 +1,7 @@
 import React from 'react';
 import {v4 as uuidv4} from 'uuid';
+import { nanoid } from 'nanoid'
+
 import {
   Modal,
   ModalOverlay,
@@ -25,7 +27,7 @@ const JoinRoomModal = (props: JoinRoomProps) => {
   let navigate = useNavigate();
     
   const generateRoomId = () => {
-    return uuidv4();
+    return nanoid(8);
   }
 
   const joinRoom = (roomId: string) => {

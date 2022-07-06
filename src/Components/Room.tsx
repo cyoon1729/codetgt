@@ -3,6 +3,7 @@ import CodeEditor from './CodeEditor';
 import Home from './Home';
 import { Flex, HStack, Box, Container } from '@chakra-ui/react';
 import ControlPanel from './ControlPanel';
+import CommPanel from './CommPanel';
 
 interface RoomProps {
     modalOpenDefault: boolean,
@@ -24,13 +25,15 @@ const Room = (props: RoomProps) => {
           justify="center"
           direction="row"
         >
-        <Box width="20%" height="90%">
-            <ControlPanel />
+        <Box width="30%" height="90%">
+          <ControlPanel roomId={roomId}/>
         </Box>
 
         <CodeEditor eid={1} />
 
-        <Box width="20%" backgroundColor="blue"> hi </Box>
+        <Box width="25%" borderLeft="2px" borderLeftColor="#E1E1E1">
+          <CommPanel />
+        </Box>
       </Flex>
     </div>      
   );

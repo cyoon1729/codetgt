@@ -26,29 +26,7 @@ const messages = [
   {name: "chris", msg: "hello"},
   {name: "chris", msg: "hello"},
   {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-  {name: "chris", msg: "hello"},
-];
+  ];
 
 
 
@@ -71,10 +49,11 @@ const Chatbox = () => {
   };
   
   return (
-    <VStack width="100%" spacing={0} align="left">
+    <VStack width="100%" spacing={0} align="left" height="full" > 
       <Heading fontSize={14} py={2}> Chat </Heading>
       <Divider paddingBottom={1} />
-      <Flex paddingTop={1} maxHeight="70%" width="100%" overflowY="scroll" flexDirection="column">
+      <Flex paddingTop={1} h="full" width="100%" overflowY="scroll" flexDirection="column">
+        <Box h="full"></Box>
           {msgs}
         <div ref={messagesEndRef} />
       </Flex>
@@ -87,7 +66,7 @@ const Chatbox = () => {
           </Button>
           </InputRightElement>
         </InputGroup>
-       </Box>
+      </Box>
     </VStack>
   );
 };

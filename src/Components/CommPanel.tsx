@@ -33,22 +33,19 @@ const CommPanel = () => {
   
 
   return (
-    <div className="CommPanel">
-      <VStack width="full" height="100%" p={4} gap={4} align="left" justify="space-between" direction="column">
-        <Flex width="full" height="40%" align="left">
-          <Box>
+      <VStack width="full" height="100%" p={4} gap={4} align="left">
+        <Flex width="full" height={60} align="left" >
+          <Box w="full" background="blue" h="full">
             <Heading fontSize={14}> Actice Users </Heading>      
               <List py={2} px={4} spacing={2}>
                 {listUsers}     
               </List>
           </Box>
         </Flex>
-        <Flex height="10%"> <Box> </Box> </Flex>
-        <Flex height="50%">
+        <Flex background="blue" height="full">
           <Chatbox />
         </Flex>
       </VStack>
-    </div>
   );
 };
 

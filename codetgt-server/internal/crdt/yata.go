@@ -1,5 +1,9 @@
 package crdt
 
+import (
+	"strings"
+)
+
 type BlockId struct {
 	uid   string
 	clock int
@@ -15,9 +19,29 @@ type Block struct {
 
 type Blocks []Block
 
-type Yata struct {
-	blocks     Blocks
-	lastClocks map[string]int
+type Doc struct {
+	blocks Blocks
+	clocks map[string]int
+}
+
+func initDoc() Doc {
+	empty := Doc{
+		blocks: make(Blocks, 0),
+		clocks: make(map[string]int),
+	}
+	return empty
+}
+
+func (doc Doc) getContents() string {
+	var sb strings.Builder
+
+	for _, b := range doc.blocks {
+		if !b.isDeleted {
+			sb.WriteString(b.value)
+		}
+	}
+
+	return sb.String()
 }
 
 func isNullBlock(id BlockId) bool {
@@ -28,7 +52,7 @@ func (blocks Blocks) findTruePosition(idx int) int {
 	truePos := 0
 	iter := 0
 	for iter < idx {
-		if blocks[iter].isDeleted {
+		if !blocks[iter].isDeleted {
 			iter = iter + 1
 		}
 		truePos += 1
@@ -37,7 +61,7 @@ func (blocks Blocks) findTruePosition(idx int) int {
 	return truePos
 }
 
-func (blocks Blocks) safeGetId(idx int) BlockId {
+func (blocks Blocks) safelyGetBlockId(idx int) BlockId {
 	if idx < 0 || idx >= len(blocks) {
 		return BlockId{}
 	}
@@ -72,7 +96,7 @@ func (blocks Blocks) findInsertIdx(newBlock Block, idxHint int) int {
 	}
 	scanning := false
 
-	for i := destIdx; i < len(blocks); {
+	for i := destIdx; i < len(blocks); i++ {
 		if !scanning {
 			destIdx = i
 		}
@@ -109,59 +133,40 @@ func (blocks Blocks) findInsertIdx(newBlock Block, idxHint int) int {
 	return destIdx
 }
 
-func (yata Yata) integrate(newBlock Block, idxHint int) Yata {
-	blocks := yata.blocks
+func (doc Doc) integrate(newBlock Block, idxHint int) Doc {
+	blocks := doc.blocks
 	destIdx := blocks.findInsertIdx(newBlock, idxHint)
-	blocks = append(blocks[:destIdx+1], blocks[destIdx:]...)
-	blocks[destIdx] = newBlock
 
-	return Yata{blocks, yata.lastClocks}
+	if destIdx > 0 && destIdx < len(blocks) {
+		blocks = append(blocks[:destIdx+1], blocks[destIdx:]...)
+		blocks[destIdx] = newBlock
+	} else {
+		blocks = append(blocks, newBlock)
+	}
+
+	return Doc{blocks, doc.clocks}
 }
 
-func (yata Yata) insertYata(uid string, idx int, value string) Yata {
-	blocks := yata.blocks
-	lastClocks := yata.lastClocks
+func (doc Doc) insert(uid string, idx int, value string) Doc {
+	blocks := doc.blocks
+	clocks := doc.clocks
 
 	truePos := blocks.findTruePosition(idx)
 	newBlock := Block{
-		id:          BlockId{uid, lastClocks[uid] + 1},
-		leftOrigin:  blocks.safeGetId(truePos - 1),
-		rightOrigin: blocks.safeGetId(truePos),
+		id:          BlockId{uid, clocks[uid] + 1},
+		leftOrigin:  blocks.safelyGetBlockId(truePos - 1),
+		rightOrigin: blocks.safelyGetBlockId(truePos),
 		isDeleted:   false,
 		value:       value,
 	}
-	inserted := yata.integrate(newBlock, truePos)
+	inserted := doc.integrate(newBlock, truePos)
 	return inserted
 }
 
-/* Synchronous insert */
-func (yata Yata) syncInsert(uid string, idx int, value string) Yata {
-	blocks := yata.blocks
-	lastClocks := yata.lastClocks
-
-	truePos := blocks.findTruePosition(idx)
-	leftOrg := blocks.safeGetId(truePos - 1)
-	rightOrg := blocks.safeGetId(truePos)
-	clock := lastClocks[uid] + 1
-	newBlock := Block{
-		id:          BlockId{uid, clock},
-		leftOrigin:  leftOrg,
-		rightOrigin: rightOrg,
-		isDeleted:   false,
-		value:       value,
-	}
-
-	lastClocks[uid] = clock
-	inserted := append(blocks[:truePos+1], blocks[truePos:]...)
-	inserted[truePos] = newBlock
-
-	return Yata{inserted, lastClocks}
-}
-
-func (yata Yata) deleteBlock(idx int) Yata {
-	tombstoned := yata.blocks
+func (doc Doc) delete(idx int) Doc {
+	tombstoned := doc.blocks
 	truePos := tombstoned.findTruePosition(idx)
 	tombstoned[truePos].isDeleted = true
 
-	return Yata{tombstoned, yata.lastClocks}
+	return Doc{tombstoned, doc.clocks}
 }

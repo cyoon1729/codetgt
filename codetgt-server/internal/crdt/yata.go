@@ -5,7 +5,7 @@ import (
 )
 
 type BlockId struct {
-	uid   string
+	uid   int
 	clock int
 }
 
@@ -21,13 +21,13 @@ type Blocks []Block
 
 type Doc struct {
 	blocks Blocks
-	clocks map[string]int
+	clocks map[int]int
 }
 
 func initDoc() Doc {
 	empty := Doc{
 		blocks: make(Blocks, 0),
-		clocks: make(map[string]int),
+		clocks: make(map[int]int),
 	}
 	return empty
 }
@@ -45,20 +45,22 @@ func (doc Doc) getContents() string {
 }
 
 func isNullBlock(id BlockId) bool {
-	return id != BlockId{}
+	return (id == BlockId{} || id.clock == 0)
 }
 
 func (blocks Blocks) findTruePosition(idx int) int {
-	truePos := 0
-	iter := 0
-	for iter < idx {
-		if !blocks[iter].isDeleted {
-			iter = iter + 1
+	pos := 0
+	for ; pos < len(blocks); pos++ {
+		if blocks[pos].isDeleted {
+			continue
 		}
-		truePos += 1
+		if idx == 0 {
+			return pos
+		}
+		idx -= 1
 	}
 
-	return truePos
+	return pos
 }
 
 func (blocks Blocks) safelyGetBlockId(idx int) BlockId {
@@ -88,44 +90,37 @@ func (blocks Blocks) findBlockIdx(targetId BlockId, idxHint int) int {
 }
 
 func (blocks Blocks) findInsertIdx(newBlock Block, idxHint int) int {
-	leftIdx := blocks.findBlockIdx(newBlock.leftOrigin, idxHint-1)
-	destIdx := leftIdx + 1
-	rightIdx := len(blocks)
+	leftIdx := -1
 	if !isNullBlock(newBlock.leftOrigin) {
-		blocks.findBlockIdx(newBlock.rightOrigin, idxHint)
+		leftIdx = blocks.findBlockIdx(newBlock.leftOrigin, idxHint-1)
 	}
+	rightIdx := len(blocks)
+	if !isNullBlock(newBlock.rightOrigin) {
+		rightIdx = blocks.findBlockIdx(newBlock.rightOrigin, idxHint)
+	}
+	destIdx := leftIdx + 1
 	scanning := false
 
-	for i := destIdx; i < len(blocks); i++ {
+	for i := destIdx; i <= len(blocks); i++ {
 		if !scanning {
 			destIdx = i
 		}
-		if i == rightIdx {
+		if i == rightIdx || i == len(blocks) {
 			break
 		}
 
 		other := blocks[i]
-		oleft := blocks.findBlockIdx(other.leftOrigin, idxHint-1)
-		oright := blocks.findBlockIdx(other.rightOrigin, idxHint)
+		oleft := blocks.findBlockIdx(other.leftOrigin, -1)
+		oright := blocks.findBlockIdx(other.rightOrigin, -1)
 
 		if oleft < leftIdx {
 			break
 		} else if oleft == leftIdx {
-			if oright < rightIdx {
-				scanning = true
-				continue
-			} else if oright == rightIdx {
-				if newBlock.id.uid < other.id.uid {
-					break
-				} else {
-					scanning = false
-					continue
-				}
-			} else { // oright > rightIdx
-				scanning = false
-				continue
+			if oright == rightIdx && newBlock.id.uid <= other.id.uid {
+				break
 			}
-		} else { // oleft > leftIdx
+			scanning = newBlock.id.uid <= other.id.uid
+		} else {
 			continue
 		}
 	}
@@ -133,21 +128,24 @@ func (blocks Blocks) findInsertIdx(newBlock Block, idxHint int) int {
 	return destIdx
 }
 
-func (doc Doc) integrate(newBlock Block, idxHint int) Doc {
+func integrate(doc Doc, newBlock Block, idxHint int) Doc {
 	blocks := doc.blocks
 	destIdx := blocks.findInsertIdx(newBlock, idxHint)
 
-	if destIdx > 0 && destIdx < len(blocks) {
-		blocks = append(blocks[:destIdx+1], blocks[destIdx:]...)
-		blocks[destIdx] = newBlock
+	integrated := make(Blocks, len(blocks))
+	copy(integrated, blocks)
+
+	if destIdx >= 0 && destIdx < len(integrated) {
+		integrated = append(integrated[:destIdx+1], integrated[destIdx:]...)
+		integrated[destIdx] = newBlock
 	} else {
-		blocks = append(blocks, newBlock)
+		integrated = append(integrated, newBlock)
 	}
 
-	return Doc{blocks, doc.clocks}
+	return Doc{integrated, doc.clocks}
 }
 
-func (doc Doc) insert(uid string, idx int, value string) Doc {
+func insert(doc Doc, uid int, idx int, value string) Doc {
 	blocks := doc.blocks
 	clocks := doc.clocks
 
@@ -159,14 +157,58 @@ func (doc Doc) insert(uid string, idx int, value string) Doc {
 		isDeleted:   false,
 		value:       value,
 	}
-	inserted := doc.integrate(newBlock, truePos)
+	inserted := integrate(doc, newBlock, truePos)
+	inserted.clocks[uid] += 1
 	return inserted
 }
 
-func (doc Doc) delete(idx int) Doc {
-	tombstoned := doc.blocks
+func delete(doc Doc, idx int) Doc {
+	tombstoned := make(Blocks, len(doc.blocks))
+	copy(tombstoned, doc.blocks)
 	truePos := tombstoned.findTruePosition(idx)
 	tombstoned[truePos].isDeleted = true
 
 	return Doc{tombstoned, doc.clocks}
+}
+
+func canInsertNow(doc Doc, seen map[BlockId]bool, block Block) bool {
+	ok := seen[block.id]
+	leftOk := seen[block.leftOrigin]
+	rightOk := seen[block.rightOrigin]
+	return (!ok && leftOk && rightOk)
+}
+
+func merge(src Doc, dst Doc) Doc {
+	deletes := make(map[BlockId]bool)
+	isDeleted := func(b Block) bool { return b.isDeleted }
+	for _, b := range filterBlocks(isDeleted, src.blocks) {
+		deletes[b.id] = true
+	}
+
+	for i, b := range dst.blocks {
+		if deletes[b.id] {
+			dst.blocks[i].isDeleted = true
+		}
+	}
+
+	seen := make(map[BlockId]bool)
+	for _, b := range dst.blocks {
+		seen[b.id] = true
+	}
+
+	shouldMerge := func(b Block) bool { return !seen[b.id] }
+	needsIntegrate := filterBlocks(shouldMerge, src.blocks)
+	numToIntegrate := len(needsIntegrate)
+
+	for numToIntegrate > 0 {
+		for _, b := range needsIntegrate {
+			if canInsertNow(dst, seen, b) {
+				seen[b.id] = true
+				dst = integrate(dst, b, -1)
+				numToIntegrate -= 1
+			}
+		}
+	}
+
+	return dst
 }
